@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-mattermost-advanced",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Advanced n8n community node for Mattermost with post editing, file uploads, thread replies, direct messages, and dynamic attachments",
   "keywords": [
     "n8n-community-node-package",
