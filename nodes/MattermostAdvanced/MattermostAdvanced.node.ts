@@ -231,9 +231,14 @@ export class MattermostAdvanced implements INodeType {
 						value: 'none',
 					},
 					{
-						name: 'Raw JSON / Code (Buttons & Menus)',
+						name: 'Visual Builder (Form for Buttons)',
+						value: 'builder',
+						description: 'Add and configure buttons visually using form fields',
+					},
+					{
+						name: 'Raw JSON / From Code Node',
 						value: 'rawJson',
-						description: 'Pass dynamic buttons, actions, and interactive elements directly as a JSON array',
+						description: 'Pass dynamic buttons, actions, and interactive elements directly as a JSON array (e.g. from an upstream Code node)',
 					},
 				],
 				default: 'none',
@@ -244,6 +249,82 @@ export class MattermostAdvanced implements INodeType {
 					},
 				},
 				description: 'How to specify message attachments (e.g. interactive buttons)',
+			},
+			{
+				displayName: 'Attachments Header Text',
+				name: 'attachmentText',
+				type: 'string',
+				default: 'Выберите действие:',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['post', 'update'],
+						attachmentsMode: ['builder'],
+					},
+				},
+				description: 'Text displayed directly above the buttons',
+			},
+			{
+				displayName: 'Buttons',
+				name: 'buttons',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				placeholder: 'Add Button',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['post', 'update'],
+						attachmentsMode: ['builder'],
+					},
+				},
+				options: [
+					{
+						name: 'button',
+						displayName: 'Button',
+						values: [
+							{
+								displayName: 'Button Label',
+								name: 'name',
+								type: 'string',
+								default: 'Скачать',
+								description: 'Text shown on the button',
+							},
+							{
+								displayName: 'Webhook URL',
+								name: 'url',
+								type: 'string',
+								default: '',
+								placeholder: 'https://n8n.example.com/webhook/...',
+								description: 'URL of the webhook that receives the click action',
+							},
+							{
+								displayName: 'Style',
+								name: 'style',
+								type: 'options',
+								options: [
+									{ name: 'Default (Gray)', value: 'default' },
+									{ name: 'Primary (Theme Color)', value: 'primary' },
+									{ name: 'Success (Green)', value: 'success' },
+									{ name: 'Danger (Red)', value: 'danger' },
+								],
+								default: 'default',
+								description: 'Visual color style of the button in Mattermost',
+							},
+							{
+								displayName: 'Context (JSON Payload)',
+								name: 'contextJson',
+								type: 'string',
+								default: '{}',
+								placeholder: '{"action": "download", "torrent_id": "123"}',
+								description: 'JSON object payload sent to the webhook when this button is clicked',
+							},
+						],
+					},
+				],
+				description: 'Interactive buttons to attach to the message',
 			},
 			{
 				displayName: 'Attachments JSON',
@@ -793,14 +874,47 @@ export class MattermostAdvanced implements INodeType {
 							}
 						}
 
+						let attachments: any[] = [];
 						if (attachmentsMode === 'rawJson') {
 							const attachmentsJson = this.getNodeParameter('attachmentsJson', i, '[]') as string;
-							let attachments = [];
 							try {
 								attachments = typeof attachmentsJson === 'string' ? JSON.parse(attachmentsJson) : attachmentsJson;
 							} catch (e) {
 								throw new NodeOperationError(this.getNode(), 'Invalid JSON in Attachments JSON parameter');
 							}
+						} else if (attachmentsMode === 'builder') {
+							const attachmentText = this.getNodeParameter('attachmentText', i, '') as string;
+							const buttonsCollection = this.getNodeParameter('buttons', i, {}) as IDataObject;
+							const actionItems: any[] = [];
+							if (buttonsCollection?.button && Array.isArray(buttonsCollection.button)) {
+								for (const btn of buttonsCollection.button as any[]) {
+									let context: any = {};
+									if (btn.contextJson) {
+										try {
+											context = typeof btn.contextJson === 'string' ? JSON.parse(btn.contextJson) : btn.contextJson;
+										} catch (e) {
+											context = { raw: btn.contextJson };
+										}
+									}
+									actionItems.push({
+										name: btn.name || 'Button',
+										style: btn.style || 'default',
+										type: 'button',
+										integration: {
+											url: btn.url || '',
+											context,
+										},
+									});
+								}
+							}
+							if (actionItems.length > 0 || attachmentText) {
+								attachments = [{
+									text: attachmentText,
+									actions: actionItems,
+								}];
+							}
+						}
+						if (attachments.length > 0) {
 							postBody.props = {
 								...(postBody.props as IDataObject || {}),
 								attachments,
@@ -821,14 +935,47 @@ export class MattermostAdvanced implements INodeType {
 							updateBody.message = message;
 						}
 
+						let attachments: any[] = [];
 						if (attachmentsMode === 'rawJson') {
 							const attachmentsJson = this.getNodeParameter('attachmentsJson', i, '[]') as string;
-							let attachments = [];
 							try {
 								attachments = typeof attachmentsJson === 'string' ? JSON.parse(attachmentsJson) : attachmentsJson;
 							} catch (e) {
 								throw new NodeOperationError(this.getNode(), 'Invalid JSON in Attachments JSON parameter');
 							}
+						} else if (attachmentsMode === 'builder') {
+							const attachmentText = this.getNodeParameter('attachmentText', i, '') as string;
+							const buttonsCollection = this.getNodeParameter('buttons', i, {}) as IDataObject;
+							const actionItems: any[] = [];
+							if (buttonsCollection?.button && Array.isArray(buttonsCollection.button)) {
+								for (const btn of buttonsCollection.button as any[]) {
+									let context: any = {};
+									if (btn.contextJson) {
+										try {
+											context = typeof btn.contextJson === 'string' ? JSON.parse(btn.contextJson) : btn.contextJson;
+										} catch (e) {
+											context = { raw: btn.contextJson };
+										}
+									}
+									actionItems.push({
+										name: btn.name || 'Button',
+										style: btn.style || 'default',
+										type: 'button',
+										integration: {
+											url: btn.url || '',
+											context,
+										},
+									});
+								}
+							}
+							if (actionItems.length > 0 || attachmentText) {
+								attachments = [{
+									text: attachmentText,
+									actions: actionItems,
+								}];
+							}
+						}
+						if (attachments.length > 0) {
 							updateBody.props = {
 								attachments,
 							};
