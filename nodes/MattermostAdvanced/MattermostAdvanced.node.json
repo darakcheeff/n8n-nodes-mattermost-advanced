@@ -1,0 +1,15 @@
+{
+  "node": "n8n-nodes-mattermost-advanced.mattermostAdvanced",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": [
+    "Communication"
+  ],
+  "resources": {
+    "primaryDocumentation": [
+      {
+        "url": "https://github.com/darakcheeff/n8n-nodes-mattermost-advanced#readme"
+      }
+    ]
+  }
+}

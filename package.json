@@ -1,0 +1,52 @@
+{
+  "name": "n8n-nodes-mattermost-advanced",
+  "version": "1.0.0",
+  "description": "Advanced n8n community node for Mattermost with post editing, file uploads, thread replies, direct messages, and dynamic attachments",
+  "keywords": [
+    "n8n-community-node-package",
+    "mattermost",
+    "chat",
+    "bot",
+    "interactive"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/darakcheeff/n8n-nodes-mattermost-advanced",
+  "author": {
+    "name": "darakcheeff",
+    "url": "https://github.com/darakcheeff"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darakcheeff/n8n-nodes-mattermost-advanced.git"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/nodes/MattermostAdvanced && cp nodes/MattermostAdvanced/*.svg nodes/MattermostAdvanced/*.json dist/nodes/MattermostAdvanced/ 2>/dev/null || true",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/MattermostAdvancedApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/MattermostAdvanced/MattermostAdvanced.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "n8n-workflow": "^1.0.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "form-data": "^4.0.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
