@@ -222,7 +222,7 @@ export class MattermostAdvanced implements INodeType {
 				description: 'Comma-separated file IDs (or JSON array) to attach to the post. Files can be uploaded using the File resource.',
 			},
 			{
-				displayName: 'Attachments Mode',
+				displayName: 'Buttons & Attachments Mode',
 				name: 'attachmentsMode',
 				type: 'options',
 				options: [
@@ -231,12 +231,12 @@ export class MattermostAdvanced implements INodeType {
 						value: 'none',
 					},
 					{
-						name: 'Visual Builder (Form for Buttons)',
+						name: 'Create Manually in Node (Visual Builder)',
 						value: 'builder',
 						description: 'Add and configure buttons visually using form fields',
 					},
 					{
-						name: 'Raw JSON / From Code Node',
+						name: 'Pass Ready JSON (From Code / Previous Node)',
 						value: 'rawJson',
 						description: 'Pass dynamic buttons, actions, and interactive elements directly as a JSON array (e.g. from an upstream Code node)',
 					},
