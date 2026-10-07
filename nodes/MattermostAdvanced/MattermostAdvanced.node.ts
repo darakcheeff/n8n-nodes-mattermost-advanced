@@ -1037,31 +1037,49 @@ export class MattermostAdvanced implements INodeType {
 						const fileBuffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
 						const fileName = binaryData.fileName || 'file';
 
-						const FormData = require('form-data');
-						const formData = new FormData();
-						formData.append('channel_id', channelId);
-						formData.append('files', fileBuffer, {
-							filename: fileName,
-							contentType: binaryData.mimeType,
+						const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+						const safeFileName = (fileName || 'file.bin').replace(/[^\w.\-]/g, '_');
+						const h1 = Buffer.from(
+							'--' + boundary + '\r\n' +
+							'Content-Disposition: form-data; name="channel_id"\r\n\r\n' +
+							channelId + '\r\n' +
+							'--' + boundary + '\r\n' +
+							'Content-Disposition: form-data; name="files"; filename="' + safeFileName + '"\r\n' +
+							'Content-Type: ' + (binaryData.mimeType || 'application/octet-stream') + '\r\n\r\n',
+							'utf-8'
+						);
+						const f1 = Buffer.from('\r\n--' + boundary + '--\r\n', 'utf-8');
+						const payloadBuffer = Buffer.concat([h1, fileBuffer, f1]);
+
+						const uploadUrl = new URL(baseUrl + '/api/v4/files');
+						const transport = uploadUrl.protocol === 'https:' ? require('https') : require('http');
+
+						responseData = await new Promise((resolve, reject) => {
+							const req = transport.request(uploadUrl, {
+								method: 'POST',
+								headers: {
+									'Authorization': 'Bearer ' + accessToken,
+									'Content-Type': 'multipart/form-data; boundary=' + boundary,
+									'Content-Length': payloadBuffer.length,
+								},
+							}, (res: any) => {
+								const chunks: Buffer[] = [];
+								res.on('data', (c: Buffer) => chunks.push(c));
+								res.on('end', () => {
+									const raw = Buffer.concat(chunks).toString('utf-8');
+									try {
+										resolve(JSON.parse(raw));
+									} catch (e) {
+										resolve(raw);
+									}
+								});
+							});
+							req.on('error', reject);
+							req.write(payloadBuffer);
+							req.end();
 						});
 
-						const formBuffer = formData.getBuffer();
-						const url = `${baseUrl}/api/v4/files`;
-						const headers = {
-							Authorization: `Bearer ${accessToken}`,
-							...formData.getHeaders(),
-							'Content-Length': formBuffer.length,
-						};
-
-						responseData = await this.helpers.request({
-							method: 'POST',
-							url,
-							headers,
-							body: formBuffer,
-							json: true,
-						});
-
-						if (responseData && Array.isArray((responseData as any).file_infos) && (responseData as any).file_infos.length > 0) {
+						if (responseData && Array.isArray((responseData as any).file_infos) && (responseData as any).file_infos[0]) {
 							(responseData as any).id = (responseData as any).file_infos[0].id;
 						}
 					} else if (operation === 'get') {
