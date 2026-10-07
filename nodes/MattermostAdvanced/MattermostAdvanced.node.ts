@@ -1045,19 +1045,25 @@ export class MattermostAdvanced implements INodeType {
 							contentType: binaryData.mimeType,
 						});
 
+						const formBuffer = formData.getBuffer();
 						const url = `${baseUrl}/api/v4/files`;
 						const headers = {
 							Authorization: `Bearer ${accessToken}`,
 							...formData.getHeaders(),
+							'Content-Length': formBuffer.length,
 						};
 
 						responseData = await this.helpers.request({
 							method: 'POST',
 							url,
 							headers,
-							body: formData,
+							body: formBuffer,
 							json: true,
 						});
+
+						if (responseData && Array.isArray((responseData as any).file_infos) && (responseData as any).file_infos.length > 0) {
+							(responseData as any).id = (responseData as any).file_infos[0].id;
+						}
 					} else if (operation === 'get') {
 						const fileId = this.getNodeParameter('fileId', i) as string;
 						responseData = await makeRequest('GET', `/files/${fileId}/info`);
